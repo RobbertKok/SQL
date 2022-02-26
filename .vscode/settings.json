@@ -1,0 +1,17 @@
+{
+    "sqltools.connections": [
+        {
+            "port": 1025,
+            "tdsqloptions": {
+                "logmech": "LDAP",
+                "encryptdata": false
+            },
+            "previewLimit": 50,
+            "driver": "SQLTools Teradata Driver",
+            "name": "Teraprod",
+            "server": "teraprod.bank.local",
+            "username": "p9007680",
+            "password": "Tab@57Mod@6419V"
+        }
+    ]
+}
