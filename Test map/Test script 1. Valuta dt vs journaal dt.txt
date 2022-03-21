@@ -1,0 +1,12 @@
+select
+trx_journaal_dt - trx_valuta_dt as aantal_dagen_verschil
+,count(*) as aantal_transacties
+--,sum(case when trx_journaal_dt <> trx_valuta_dt then 1 else 0 end) as verschil
+--,(verschil (decimal(18,5)))/ aant (decimal(18,5))
+from S_DM_VariabeleRente.financiele_transacties t
+join S_DM_VariabeleRente.rekening_klant_segment k
+on t.contract_oid = k.contract_oid
+where case when trx_journaal_dt <> trx_valuta_dt then 1 else 0 end = 1
+and persona = 'ANNA'
+group by 1
+order by 1;

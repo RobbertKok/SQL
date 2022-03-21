@@ -1,0 +1,27 @@
+
+drop table s_dm_variabelerente.rekening_dq_issues;
+
+create table s_dm_variabelerente.rekening_dq_issues
+as
+(
+ sel contract_oid 
+,max(rekeningsoort_nr) as rekeningsoort_nr
+,max(inp_kred_limiet2) as inp_kred_limiet2
+,min(klant_rte_jaar_perc) as min_klant_rte_jaar_perc
+,max(klant_rte_jaar_perc) as max_klant_rte_jaar_perc
+,max(rente_afreken_periode) as rente_afreken_periode
+from S_DM_VariabeleRente.rekening_dagbasis
+where 1=1
+and peil_dag_dt <= opgeheven_dt-1 
+and (rekeningsoort_nr in (607,615)
+or inp_kred_limiet2 is null 
+or inp_kred_limiet2 > 50000.00
+or inp_kred_limiet2 <=0
+or klant_rte_jaar_perc < 0.00
+or klant_rte_jaar_perc > 13.0
+or rente_afreken_periode = 'Jaar')
+group by 1
+
+)with data unique primary index(contract_oid);
+
+

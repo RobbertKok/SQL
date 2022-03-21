@@ -1,0 +1,77 @@
+-- totaal vergelijk
+select 
+count(distinct contract_oid) as aantal_reknrs
+,count(*) as aant_maanden
+,sum(case when saldo_debetrente_bg is not null then 1 else 0 end) as aant_rek_rentebg_sas
+,sum(saldo_debetrente_bg) as saldo_debetrente_bg1
+,sum(case when saldo_debetrente_bg is not null
+ then ((avg_klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as avg_berekend_klantrente_bg 
+,sum(case when saldo_debetrente_bg is not null
+ then ((klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as berekend_klantrente_bg 
+ ,(berekend_klantrente_bg+saldo_debetrente_bg1)/saldo_debetrente_bg1
+from S_DM_VariabeleRente.rekening_compensatie_gem_saldo
+where 1=1
+and extract(year from peil_dt)*100+extract(month from peil_dt) <= extract(year from coalesce(opgeheven_dt,date'9999-12-31'))*100+extract(month from coalesce(opgeheven_dt,date'9999-12-31')) 
+and contract_oid not in (select contract_oid from s_dm_variabelerente.rekening_dq_issues)
+and saldo_debetrente_bg > 0
+;
+
+-- outliers op maand standen niveau inclusief transacties tbv verder onderzoek
+select 
+ s.contract_oid
+,peil_dt
+,opening_dt
+,opgeheven_dt
+,(case when coalesce(saldo_debetrente_bg,0) > 0 then 1 else 0 end) as aant_rek_rentebg_sas
+,(saldo_debetrente_bg) as saldo_debetrente_bg
+,(case when saldo_debetrente_bg is not null
+ then ((avg_klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as avg_berekend_klantrente_bg 
+,(case when saldo_debetrente_bg is not null
+ then ((klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as berekend_klantrente_bg  
+,t.trx_journaal_dt
+,t.trx_valuta_dt
+,t.VOLG_NR
+,t.transactiesoort
+,t.TRANSACTIE_BG
+from S_DM_VariabeleRente.rekening_compensatie_gem_saldo s
+join S_DM_VariabeleRente.financiele_transacties t
+on s.contract_oid = t.contract_oid
+and s.peil_dt = t.ultimo_maand_dt
+where 1=1
+and extract(year from peil_dt)*100+extract(month from peil_dt) <= extract(year from coalesce(opgeheven_dt,date'9999-12-31'))*100+extract(month from coalesce(opgeheven_dt,date'9999-12-31')) 
+and s.contract_oid not in (select contract_oid from s_dm_variabelerente.rekening_dq_issues)
+and aant_rek_rentebg_sas = 1
+and ((saldo_debetrente_bg + berekend_klantrente_bg)> 2
+or  (saldo_debetrente_bg + berekend_klantrente_bg)< -2)
+order by s.contract_oid, peil_dt
+;
+
+--  contracten met een outlier in maandstand
+sel count(distinct contract_oid)from
+(select 
+ contract_oid
+,peil_dt
+,(case when saldo_debetrente_bg is not null then 1 else 0 end) as aant_rek_rentebg_sas
+,(saldo_debetrente_bg) as saldo_debetrente_bg
+,(case when saldo_debetrente_bg is not null
+ then ((avg_klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as avg_berekend_klantrente_bg 
+,(case when saldo_debetrente_bg is not null
+ then ((klant_rte_jaar_perc/100)*gem_maand_saldo_bg)/12 
+ else null end) as berekend_klantrente_bg  
+ 
+from S_DM_VariabeleRente.rekening_compensatie_gem_saldo
+where 1=1
+and extract(year from peil_dt)*100+extract(month from peil_dt) <= extract(year from coalesce(opgeheven_dt,date'9999-12-31'))*100+extract(month from coalesce(opgeheven_dt,date'9999-12-31')) 
+and contract_oid not in (select contract_oid from s_dm_variabelerente.rekening_dq_issues)
+and aant_rek_rentebg_sas = 1
+and ((saldo_debetrente_bg + berekend_klantrente_bg)> 2
+or  (saldo_debetrente_bg + berekend_klantrente_bg)< -2)
+)T--order by contract_oid, peil_dt
+
+
+
